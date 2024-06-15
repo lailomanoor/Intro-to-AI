@@ -1,0 +1,101 @@
+from collections import deque
+import numpy as np
+import matplotlib.pyplot as plt
+
+class Agent:
+    def __init__(self, start_pos, start_dir):
+        self.pos = start_pos
+        self.dir = start_dir
+        self.speed = 0
+
+def is_valid_move(maze, pos, speed):
+    if pos[0] < 0 or pos[0] >= len(maze) or pos[1] < 0 or pos[1] >= len(maze[0]):
+        return False
+    if maze[pos[0]][pos[1]] == 1:
+        return False
+    if speed < 0 or speed > 1:
+        return False
+    return True
+
+def bfs(maze, start_pos, start_dir, exit_pos):
+    queue = deque([(Agent(start_pos, start_dir), [start_pos])])
+    visited = set()
+
+    while queue:
+        agent, path = queue.popleft()
+        if agent.pos == exit_pos:
+            return path
+
+        if (agent.pos, agent.dir, agent.speed) in visited:
+            continue
+        visited.add((agent.pos, agent.dir, agent.speed))
+
+        # Move forward
+        new_pos = (agent.pos[0] + agent.dir[0], agent.pos[1] + agent.dir[1])
+        if is_valid_move(maze, new_pos, agent.speed + 1):
+            new_agent = Agent(new_pos, agent.dir)
+            new_agent.speed = agent.speed + 1
+            queue.append((new_agent, path + [new_pos]))
+
+        # Stop
+        if agent.speed > 0:
+            new_agent = Agent(agent.pos, agent.dir)
+            new_agent.speed = agent.speed - 1
+            queue.append((new_agent, path + [agent.pos]))
+
+        # Turn left
+        if agent.speed == 0:
+            new_dir = (-agent.dir[1], agent.dir[0])
+            new_agent = Agent(agent.pos, new_dir)
+            queue.append((new_agent, path + [agent.pos]))
+
+        # Turn right
+        if agent.speed == 0:
+            new_dir = (agent.dir[1], -agent.dir[0])
+            new_agent = Agent(agent.pos, new_dir)
+            queue.append((new_agent, path + [agent.pos]))
+
+    return None
+
+maze = np.array([
+    [0, 0, 0, 1, 0, 0, 0],
+    [0, 1, 0, 0, 0, 1, 0],
+    [0, 1, 1, 1, 1, 0, 0],
+    [0, 0, 0, 0, 1, 0, 1],
+    [1, 1, 1, 0, 0, 0, 0],
+    [0, 0, 1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0]
+])
+
+start_pos = (0, 0)
+start_dir = (0, 1)
+exit_pos = (6, 6)
+
+path = bfs(maze, start_pos, start_dir, exit_pos)
+
+if path:
+    print("Shortest path found:")
+    for i, pos in enumerate(path):
+        print(f"Step {i}: {pos}")
+    
+    # Visualizing the maze and the path
+    path_vis = np.zeros_like(maze)
+    for pos in path:
+        path_vis[pos[0], pos[1]] = 1
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+    
+    ax1.imshow(maze, cmap='binary', interpolation='nearest')
+    ax1.set_title('Maze')
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+
+    ax2.imshow(path_vis, cmap='binary', interpolation='nearest')
+    ax2.set_title('Path')
+    ax2.set_xticks([])
+    ax2.set_yticks([])
+
+    plt.tight_layout()
+    plt.show()
+else:
+    print("No path found.")
